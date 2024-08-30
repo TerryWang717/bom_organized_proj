@@ -29,7 +29,7 @@ from tkinter import ttk,messagebox,filedialog
 # 版本标识
 Major_Version = "1"
 Minor_Version = "0"
-Revision_Version = "1"
+Revision_Version = "2"
 Suffix = "release"
 
 __version__ = Major_Version + '.' + Minor_Version + '.' + Revision_Version + '_' + Suffix
@@ -67,18 +67,13 @@ def get_sheet_and_bom_name(old_bom_excel_path):
     final_sheet_title = (bom_to_excel_filename + '-' + timestamp)[:31]
     # 新的表格只能以.xlsx为后缀
     final_bom_name = bom_to_excel_folder_path + '\\' + bom_to_excel_filename + '-' + timestamp + '.xlsx'
-    pandas_bom_name =  bom_to_excel_folder_path + '\\' + bom_to_excel_filename + '-' + 'pandas_bom' + '.xlsx'
-
-    return final_sheet_title, final_bom_name, pandas_bom_name
-
-final_sheet_title, final_bom_name, pandas_bom_name = get_sheet_and_bom_name(bom_path)
-
+    return final_sheet_title, final_bom_name
+    
+final_sheet_title, final_bom_name = get_sheet_and_bom_name(bom_path)
 print(f'最终excel文件路径: {final_bom_name}')
-
 
 # 复制文件路径到剪贴板，以便在下一个程序中粘贴
 pyperclip.copy(final_bom_name)
-
 
 # 打开Excel文件
 workbook = openpyxl.load_workbook(bom_path)
@@ -114,7 +109,6 @@ df_new = df_del.groupby(['元件值', '封装', '精度'],sort=False, dropna=Fal
 quantity = df_new['位号'].str.count(',') + 1
 df_new['数量'] = quantity
 
-
 # 在df_del删除NC后的表格上进行操作，删除重复行只保留第一个
 df_drop = df_del.drop_duplicates(subset=['元件值', '封装', '精度'], ignore_index=True)
 
@@ -125,11 +119,11 @@ df_drop_cp['位号'] = df_new['位号']
 df_drop_cp['数量'] = df_new['数量']
 df_drop = df_drop_cp.copy()
 
-df_drop.to_excel(pandas_bom_name, index=False)
+df_drop.to_excel(final_bom_name, index=False)
 
 
 ############ 打开Excel文件，现在切换为openpyxl来调整格式 ###################
-workbook = openpyxl.load_workbook(pandas_bom_name)
+workbook = openpyxl.load_workbook(final_bom_name)
 output_sheet = workbook.active
 
 
@@ -241,9 +235,7 @@ for cell in output_sheet['H']:
         output_sheet.row_dimensions[cell.row].height = (lines) * 14
      
 
-# 保存最终文件
+# 保存文件并弹出成功提示
 workbook.save(final_bom_name)
 workbook.close()
-# 删除中间文件
-os.remove(pandas_bom_name)
 pyautogui.alert(f'新BOM\n{final_bom_name}\n创建成功!', '确认')        
